@@ -30,7 +30,7 @@ def get_XY(data: pd.DataFrame, xlabs: list, ylab: list, time_steps: int = 2):
         Y.append(cpy[ylab].iloc[i])
     
     X, Y = np.array(X), np.array(Y)
-    return X, Y
+    return X, Y, y_scaler
 
 
 class RNN:
@@ -58,7 +58,7 @@ class RNN:
         :param activation: str - activation function for hidden and output layers, default = 'relu'
         :return: Sequential - Sequential object for a fitted RNN
         """
-        
+
         # initialize sequential RNN
         mod = Sequential()
         # add first layer with x_train inputs of shape: (time_step x features)
