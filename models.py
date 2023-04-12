@@ -1,36 +1,33 @@
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, SimpleRNN, Dropout
+from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
 
-
-def get_XY(data: pd.DataFrame, xlabs: list, ylab: list, time_steps: int = 2):
+def get_XY(data: pd.DataFrame, xlabs: list, ylab: list, scaler: MinMaxScaler, time_steps: int = 2):
     """
     This function receives a dataframe, feature and target labels as well
-    the number of time steps for each sequence and returns two 3D scaled arrays
+    the number of time steps for each sequence and returns a 3D and a 2D scaled arrays
     for RNN
     :param data: pd.DataFrame - dataset of features and target variables
     :param xlabs: list - feature labels
     :param ylab: list - target label
     :param time_steps: int - length of each input sequence, default = 2
-    :return: tuple(np.array, np.array) - tuple of 3D-arrays for X and Y, scaled
+    :return: tuple(np.array, np.array) - X-shape: (observations, time_steps, features)
+    Y-shape: (observations,)
     """
-
+    # extract input sequences and output
     cpy = data.copy()
-    # scale data
-    x_scaler = MinMaxScaler().fit(data[xlabs])
-    y_scaler = MinMaxScaler().fit(data[ylab])
-    cpy[xlabs] = x_scaler.transform(data[xlabs])    
-    cpy[ylab] = y_scaler.transform(data[ylab])
-    # extract input sequences and outpu
+    cpy[xlabs] = scaler.fit_transform(data[xlabs])
+    cpy[ylab] = scaler.fit_transform(data[ylab])
+
     X, Y = [], []
     for i in range(time_steps, cpy.shape[0]):
         X.append(cpy[xlabs].iloc[i - time_steps : i])
         Y.append(cpy[ylab].iloc[i])
     
     X, Y = np.array(X), np.array(Y)
-    return X, Y, y_scaler
+    return X, Y
 
 
 class RNN:
@@ -66,14 +63,14 @@ class RNN:
             mod.add(SimpleRNN(
                 units=self.units,
                 activation=activation,
-                return_sequences=True,
+                # return_sequences=True,
                 input_shape=(self.x_train.shape[1], self.x_train.shape[2])
             ))
         else:
             mod.add(LSTM(
                 units=self.units,
                 activation=activation,
-                return_sequences=True,
+                # return_sequences=True,
                 input_shape=(self.x_train.shape[1], self.x_train.shape[2])
             ))
         # add output layer
@@ -87,6 +84,6 @@ class RNN:
             loss='mean_squared_error'
         )
         # Fit X_train and Y_train to the RNN
-        mod.fit(self.x_train, self.y_train, batch_size=batch_size, epochs=epochs)
+        mod.fit(self.x_train, self.y_train, batch_size=batch_size, epochs=epochs, verbose=0)
         
         return mod
