@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, SimpleRNN, Dropout
+from keras.layers import LSTM, Dense, SimpleRNN, GRU
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import pandas as pd
@@ -17,35 +17,35 @@ def get_XY(data: pd.DataFrame, xlabs: list, ylab: list, scaler: MinMaxScaler, ti
     Y-shape: (observations,)
     """
     # extract input sequences and output
-    cpy = data.copy()
-    cpy[xlabs] = scaler.fit_transform(data[xlabs])
-    cpy[ylab] = scaler.fit_transform(data[ylab])
+    # cpy = data.copy()
+    # cpy[xlabs] = scaler.fit_transform(data[xlabs])
+    # cpy[ylab] = scaler.fit_transform(data[ylab])
 
     X, Y = [], []
-    for i in range(time_steps, cpy.shape[0]):
-        X.append(cpy[xlabs].iloc[i - time_steps : i])
-        Y.append(cpy[ylab].iloc[i])
+    for i in range(time_steps, data.shape[0]):
+        X.append(data[xlabs].iloc[i - time_steps : i])
+        Y.append(data[ylab].iloc[i])
     
-    X, Y = np.array(X), np.array(Y)
+    X, Y = np.array(X), np.array(Y).reshape((len(Y),))
     return X, Y
 
 
 class RNN:
 
     def __init__(self, x_train: np.array, y_train: np.array, units: int,
-                    simple: bool = False, epochs: int = 100, batch_size: int = 32,
+                    type_: str = 'lstm', epochs: int = 100, batch_size: int = 32,
                         activation: str = 'relu'):
         self.x_train = x_train
         self.y_train = y_train
         self.units = units
         self.regressor = self.create_and_fit_NN(
-            simple,
+            type_,
             epochs,
             batch_size,
             activation
         )
 
-    def create_and_fit_NN(self, simple: bool, epochs: int, batch_size: int, activation: str):
+    def create_and_fit_NN(self, type_, epochs: int, batch_size: int, activation: str):
         """
         This function creates a Recurrent Neural Network, compiles it and fits the
         object's x_train and y_train datasets.
@@ -59,20 +59,29 @@ class RNN:
         # initialize sequential RNN
         mod = Sequential()
         # add first layer with x_train inputs of shape: (time_step x features)
-        if simple:
+        if type_ == 'simple':
             mod.add(SimpleRNN(
                 units=self.units,
                 activation=activation,
                 # return_sequences=True,
                 input_shape=(self.x_train.shape[1], self.x_train.shape[2])
             ))
-        else:
+        elif type_ == 'lstm':
             mod.add(LSTM(
                 units=self.units,
                 activation=activation,
                 # return_sequences=True,
                 input_shape=(self.x_train.shape[1], self.x_train.shape[2])
             ))
+        elif type_ == 'gru':
+            mod.add(GRU(
+                units=self.units,
+                activation=activation,
+                # return_sequences=True,
+                input_shape=(self.x_train.shape[1], self.x_train.shape[2])
+            ))
+        else:
+            raise Exception('Incorrect Network type. Acceptable inputs: "simple", "lstm", "gru".')
         # add output layer
         mod.add(Dense(
             units=1,
