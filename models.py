@@ -34,7 +34,7 @@ class RNN:
 
     def __init__(self, x_train: np.array, y_train: np.array, units: int,
                     type_: str = 'lstm', epochs: int = 100, batch_size: int = 32,
-                        activation: str = 'relu'):
+                        activation: str = 'tanh'):
         self.x_train = x_train
         self.y_train = y_train
         self.units = units
@@ -85,7 +85,7 @@ class RNN:
         # add output layer
         mod.add(Dense(
             units=1,
-            activation='relu'
+            activation='tanh'
         ))
         # compile RNN
         mod.compile(
